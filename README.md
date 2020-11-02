@@ -154,7 +154,7 @@ $ yarn add ts-service-locator
 The default export from `ts-service-locator` is a factory function for creating a service locator. If using TypeScript, here you will provide the types that may be registered on the service locator. For example, say we have a global `server` service that handles making API calls to our backend service. We also have a logging service that can log errors.
 
 ```js
-// sl.js
+// sl.ts
 
 import createSl from 'ts-service-locator';
 
@@ -187,7 +187,7 @@ Since you gave `createSl` the `Services` type which only has the keys 'serverSer
 The same rules apply when you retrieve a service. For example:
 
 ```js
-// component.js
+// component.ts
 import sl from "./sl.js";
 
 const server = sl.get("serverService");
