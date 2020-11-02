@@ -1,7 +1,9 @@
 {
   "name": "ts-service-locator",
+  "author": "Brett Fisher",
   "version": "0.0.1",
   "main": "build/index.js",
+  "types": "build/index.d.ts",
   "license": "MIT",
   "devDependencies": {
     "@babel/preset-env": "^7.12.1",

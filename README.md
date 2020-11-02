@@ -4,18 +4,147 @@ The service locator pattern is a pattern to prevent hard dependencies between a 
 
 ## The Problem
 
-Writing a service locator is easy. One can just use a key-value JS object to register and retrieve services by a string name. However, with TypeScript, there will be no way for your editor to know the type of the returned service. For example, say you register a service with the name 'server' and another with the name 'logger'. Both services have different methods. Once you actually retrieve 'server' from the service locator, there will be no way for your editor to know the methods that exist on the returned object. That is what `ts-service-locator` solves. All you have to do is define a type mapping the name of your service to the type of the service, and then once your retrieve your service by name, TypeScript will be aware of the existing properties and methods on the returned service.
+A major problem with directly importing services in JavaScript components is that it makes unit testing said components more difficult. For example, say you have a component that uses a `logger` service, which is responsible for sending logs to your backend service which then stores log messages in a database. In a unit test, you wouldn't want your component to actually make network calls to your backend.
+
+```ts
+// logger.ts
+import axios from "axios";
+
+export default {
+  log(message: string): void {
+    // send the message to the backend
+    axios.post("/logger", message);
+  },
+};
+```
+
+```js
+// addition-component.ts
+
+import logger from "path/to/logger";
+
+export const addTwo = (num: number): number => {
+  logger.log(`Adding two to ${num}`);
+  return num + 2;
+};
+```
+
+This is a bit of a contrived example, but it illustrates the point. Suppose we wanted to write a unit test for `addition-component.js`. With Jest, we could do something like the following:
+
+```js
+// addition-component.test.js
+
+import { addTwo } from "path/to/addition-component";
+
+describe("addition component test", () => {
+  it("adds two to a number", () => {
+    expect(addTwo(3)).toBe(5);
+  });
+});
+```
+
+This unit test will work fine, but it will also log a message to our backend. This isn't ideal, because we don't want our database to get clogged up with a bunch of messages from our unit tests. It should only contain messages from actual use cases of the component.
+
+Using a service locator is one solution to this problem. Instead of `addition-component.ts` `import`ing `logger.ts`, we could create a global object that contains all necessary services. Components could request services from the service locator. That way, the actual services can be registered in the main app, and mock services could be registered in a test environment. A simple service locator could look like the following:
+
+```ts
+// service-locator.ts
+
+const services: Record<string, any> = {}
+
+export default {
+  set(key: string, service: any): void {
+    services[key] = service;
+  },
+  get(key: string): any|undefined {
+    return services[key];
+  }
+```
+
+At our app's entry point, we can register the actual logger.
+
+```ts
+// main.ts
+import logger from "path/to/logger";
+import sl from "path/to/service-locator";
+
+sl.set("logger", logger);
+```
+
+Now we can rewrite `addition-component.ts` to use the service locator pattern:
+
+```ts
+// addition-component.ts
+import sl from "path/to/service-locator";
+
+const logger = sl.get("logger");
+
+export const addTwo = (num: number): number => {
+  if (logger) {
+    logger.log(`Adding two to ${num}`);
+  } else {
+    throw "Logger is not defined";
+  }
+  return num + 2;
+};
+```
+
+Now it's much easier to test `addition-component` without it actually making network calls. We can also easily test that the logger is actually logging something:
+
+```ts
+// addition-component.test.js
+
+import sl from "path/to/service-locator";
+
+describe("addition component test", () => {
+  it("adds two to a number", () => {
+    const loggerMock = {
+      log: jest.fn(),
+    };
+    sl.set("logger", loggerMock);
+    expect(addTwo(3)).toBe(5);
+    expect(loggerMock.log).toHaveBeenCalled();
+  });
+});
+```
+
+Now when `addition-component` calls `sl.get("logger")`, it will receive the mocked logger that was provided in the test.
+
+This is fine, but our service locator has a return type of `any` from the get function. If we're using TypeScript, then we'll lose the Intellisense our editor can provide if we just `import`ed our services directly. One solution is to cast our services like so:
+
+```ts
+// addition-component.ts
+import sl from "path/to/service-locator";
+import logger from "path/to/logger";
+
+const logger: typeof logger = sl.get("logger");
+
+export const addTwo = (num: number): number => {
+  if (logger) {
+    logger.log(`Adding two to ${num}`);
+  } else {
+    throw "Logger is not defined";
+  }
+  return num + 2;
+};
+```
+
+However, it would be much nicer if TypeScript would automatically know the type of the returned service based on the key passed to the `get` function. This is what `ts-service-locator` solves. All you have to do is define a type with the desired key names for your services and the types of the services that should be associated with those keys, and TypeScript will be aware of your service's type whenever the `get` function is called. See the [Usage section](#usage) for an example.
 
 ## Installation
 
 ```
-$ npm install ts-service-locator
+
+\$ npm install ts-service-locator
+
 ```
 
 Or if using yarn:
 
 ```
-$ yarn add ts-service-locator
+
+\$ yarn add ts-service-locator
+
 ```
 
 ## Usage
