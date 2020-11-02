@@ -134,17 +134,13 @@ However, it would be much nicer if TypeScript would automatically know the type 
 ## Installation
 
 ```
-
-\$ npm install ts-service-locator
-
+$ npm install ts-service-locator
 ```
 
 Or if using yarn:
 
 ```
-
-\$ yarn add ts-service-locator
-
+$ yarn add ts-service-locator
 ```
 
 ## Usage
