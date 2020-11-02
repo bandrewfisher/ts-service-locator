@@ -2,6 +2,12 @@
 
 The service locator pattern is a pattern to prevent hard dependencies between a component and the services it depends on. See [this Wikipedia article](https://en.wikipedia.org/wiki/Service_locator_pattern) for more information. `ts-service-locator` is a solution to using the service locator pattern, complete with type safety. Use it to register globally-used services and access them from any component. A major advantage this provides is the ability to provide mocked service implementations inside of unit tests.
 
+## Table of Contents
+
+- [The Problem](#the-problem)
+- [Installation](#installation)
+- [Usage](#usage)
+
 ## The Problem
 
 A major problem with directly importing services in JavaScript components is that it makes unit testing said components more difficult. For example, say you have a component that uses a `logger` service, which is responsible for sending logs to your backend service which then stores log messages in a database. In a unit test, you wouldn't want your component to actually make network calls to your backend.
